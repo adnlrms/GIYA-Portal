@@ -451,7 +451,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Full Name</label>
-                            <input type="text" id="regFullName" required class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-indigo-500 outline-none placeholder:text-slate-400 uppercase placeholder:normal-case" placeholder="Juan Dela Cruz">
+                            <input type="text" id="regFullName" oninput="validateTextInput(event)" required class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-indigo-500 outline-none placeholder:text-slate-400 uppercase placeholder:normal-case" placeholder="Juan Dela Cruz">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Email Address</label>
@@ -460,16 +460,16 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">School Name</label>
-                        <input type="text" id="regSchool" required class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-indigo-500 outline-none placeholder:text-slate-400 uppercase placeholder:normal-case" placeholder="e.g. Ambacon Elem. School">
+                        <input type="text" id="regSchool" oninput="validateTextInput(event)" required class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-indigo-500 outline-none placeholder:text-slate-400 uppercase placeholder:normal-case" placeholder="e.g. Ambacon Elem. School">
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">District</label>
-                            <input type="text" id="regDistrict" required class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-indigo-500 outline-none placeholder:text-slate-400 uppercase placeholder:normal-case" placeholder="e.g. District">
+                            <input type="text" id="regDistrict" oninput="validateTextInput(event)" required class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-indigo-500 outline-none placeholder:text-slate-400 uppercase placeholder:normal-case" placeholder="e.g. District One">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Schools Division Office</label>
-                            <input type="text" id="regSDO" required class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-indigo-500 outline-none placeholder:text-slate-400 uppercase placeholder:normal-case" placeholder="e.g. Agusan del Norte">
+                            <input type="text" id="regSDO" oninput="validateTextInput(event)" required class="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-indigo-500 outline-none placeholder:text-slate-400 uppercase placeholder:normal-case" placeholder="e.g. Agusan del Norte">
                         </div>
                     </div>
                     
@@ -480,6 +480,10 @@
                                 <strong>Data Privacy Consent:</strong> By proceeding, I consent to the collection and processing of my personal information by Project GIYA in accordance with the Data Privacy Act of 2012 (RA 10173). I understand that my data will be kept strictly confidential, securely stored, and used exclusively for division analytics and system improvements.
                             </span>
                         </label>
+                    </div>
+
+                    <div id="regErrorBox" class="hidden bg-red-50 text-red-600 border border-red-200 rounded-lg p-3 text-xs font-bold text-center mt-4 flex items-center justify-center gap-2 transition-all">
+                        <i class="ph ph-warning-circle text-lg"></i> <span id="regErrorText"></span>
                     </div>
 
                     <button type="submit" id="btnSubmitRegistration" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 mt-4 text-sm uppercase tracking-wider">
@@ -769,6 +773,34 @@
         setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
     }
 
+    function showRegError(message) {
+        const errBox = document.getElementById('regErrorBox');
+        document.getElementById('regErrorText').textContent = message;
+        errBox.classList.remove('hidden');
+    }
+
+    function hideRegError() {
+        document.getElementById('regErrorBox').classList.add('hidden');
+    }
+
+    // --- NEW: STRICT TEXT VALIDATOR ---
+    function validateTextInput(event) {
+        const originalValue = event.target.value;
+        
+        // Step 1: Strip out anything that is NOT a letter, space, period, comma, or hyphen
+        let cleanedValue = originalValue.replace(/[^a-zA-Z\s.,-]/g, '');
+        
+        // Step 2: Prevent consecutive punctuation (e.g. .., --, ,, .-)
+        cleanedValue = cleanedValue.replace(/([.,-])[.,-]+/g, '$1');
+        
+        if (originalValue !== cleanedValue) {
+            showRegError("Only letters, spaces, and single punctuation marks (.,-) are allowed.");
+            event.target.value = cleanedValue;
+        } else {
+            hideRegError();
+        }
+    }
+
     function openRegistrationModal() {
         const modal = document.getElementById('registrationModal');
         const content = document.getElementById('registrationModalContent');
@@ -781,15 +813,28 @@
 
     document.getElementById('registrationForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        hideRegError();
         const btn = document.getElementById('btnSubmitRegistration');
         const txt = document.getElementById('txtSubmitRegistration');
         const spinner = document.getElementById('registrationSpinner');
         
+        const fullNameValue = document.getElementById('regFullName').value.trim();
+        const schoolValue = document.getElementById('regSchool').value.trim();
+        const districtValue = document.getElementById('regDistrict').value.trim();
+        const sdoValue = document.getElementById('regSDO').value.trim();
+        
+        // Strict Validation: Must contain at least one actual letter
+        const hasLetter = /[a-zA-Z]/;
+        if (!hasLetter.test(fullNameValue) || !hasLetter.test(schoolValue) || !hasLetter.test(districtValue) || !hasLetter.test(sdoValue)) {
+            showRegError("Fields cannot be empty or just symbols. Please enter valid names containing letters.");
+            return;
+        }
+
         const emailValue = document.getElementById('regEmail').value.trim().toLowerCase();
         
         // Strict DepEd Email Validation
         if (!emailValue.endsWith('@deped.gov.ph')) {
-            showToast("Please use your official @deped.gov.ph email address.", "error");
+            showRegError("Please use your official @deped.gov.ph email address.");
             return; // Stop the submission
         }
         
@@ -821,11 +866,11 @@
                 // Trigger the Instruction Modal immediately after they enter
                 setTimeout(() => openInstructionModal(true), 800);
             } else { 
-                showToast(result.message || "Failed to save registration.", "error"); 
+                showRegError(result.message || "Failed to save registration."); 
                 btn.disabled = false; txt.textContent = "Save & Enter Portal"; spinner.style.display = "none";
             }
         } catch (error) {
-            showToast("Network error. Please try again.", "error");
+            showRegError("Network error. Please try again.");
             btn.disabled = false; txt.textContent = "Save & Enter Portal"; spinner.style.display = "none";
         }
     });
